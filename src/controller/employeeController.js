@@ -1,8 +1,10 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import Role from "../models/roleModel.js"
 import Employee from "../models/employeeModel.js";
 import Leave from "../models/LeaveModel.js";
+import Company from "../models/CompanyModel.js"
 
 /* ===========================
       ADD EMPLOYEE
@@ -279,7 +281,13 @@ export const getMyLeaves = async (req, res) => {
 export const getAssignedRoles = async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const assigned = await AssignedRole.findOne({ employeeId });
+
+    // Convert string to ObjectId
+    if (!mongoose.Types.ObjectId.isValid(employeeId)) {
+      return res.status(400).json({ success: false, message: "Invalid employee ID" });
+    }
+
+    const assigned = await Employee.findById(employeeId).lean();
 
     if (!assigned) {
       return res.json({ success: true, assignedRoles: [] });
@@ -287,10 +295,526 @@ export const getAssignedRoles = async (req, res) => {
 
     return res.json({
       success: true,
-      assignedRoles: assigned.workRoles || [], // e.g. ["Lead Management", "Expense"]
+      assignedRoles: assigned.assignedRoles || [],
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Error fetching roles" });
+  }
+};
+
+
+
+
+export const assignCompany = async (req, res) => {
+  try {
+    const { employeeId, companyIds } = req.body;
+
+    if (!employeeId || !companyIds || !Array.isArray(companyIds)) {
+      return res.status(400).json({ message: "adminId and companyIds are required and must be an array" });
+    }
+
+    const admin = await Employee.findByIdAndUpdate(employeeId, { company: companyIds }, { new: true })
+      .populate("company", "companyName email phone address website");
+
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
+
+    await Company.updateMany({ _id: { $in: companyIds } }, { $addToSet: { admin: employeeId } });
+    console.log(admin)
+    res.status(200).json({ message: "Companies assigned successfully", admin });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+
+// export const assignWorkRole = async (req, res) => {
+//   try {
+//     const { employeeId, companyIds, workRoles, subRoles = [], points = [] } = req.body;
+
+//     // Validate input
+//     if (!employeeId || !companyIds?.length || !workRoles?.length) {
+//       return res.status(400).json({
+//         message: "employeeId, companyIds (array), and workRoles (array) are required",
+//       });
+//     }
+
+//     // Fetch employee
+//     const employee = await Employee.findById(employeeId);
+//     if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+//     // Fetch roles from DB
+//     const roleDocs = await Role.find({ role: { $in: workRoles } });
+//     if (!roleDocs.length) {
+//       return res.status(404).json({ message: "No valid roles found" });
+//     }
+
+//     // Process each role
+//     for (const roleDoc of roleDocs) {
+//       // Get all valid subRole _ids for this specific role
+//       const allowedSubRoleIds = (roleDoc.subRole || []).map(sub => sub._id.toString());
+
+//       // Filter subRoles: only keep those that belong to THIS role
+//       const filteredSubRoles = subRoles.filter(subId => {
+//         const subIdStr = subId.toString();
+//         return allowedSubRoleIds.includes(subIdStr);
+//       });
+
+//       console.log(`Role: ${roleDoc.role}`);
+//       console.log(`Allowed SubRole IDs:`, allowedSubRoleIds);
+//       console.log(`Received SubRole IDs:`, subRoles.map(s => s.toString()));
+//       console.log(`Filtered SubRole IDs:`, filteredSubRoles.map(s => s.toString()));
+
+//       // Check if this role is already assigned to any of these companies
+//       const existingIndex = employee.assignedRoles.findIndex(existing =>
+//         existing.roleId.toString() === roleDoc._id.toString() &&
+//         existing.companyIds.some(c => companyIds.includes(c.toString()))
+//       );
+
+//       if (existingIndex !== -1) {
+//         // Update existing assignment
+//         employee.assignedRoles[existingIndex].subRoles = filteredSubRoles;
+//         employee.assignedRoles[existingIndex].points = points;
+
+//         // Merge company IDs (avoid duplicates)
+//         const existingCompanyIds = employee.assignedRoles[existingIndex].companyIds.map(c => c.toString());
+//         const newCompanyIds = companyIds.filter(c => !existingCompanyIds.includes(c.toString()));
+
+//         if (newCompanyIds.length > 0) {
+//           employee.assignedRoles[existingIndex].companyIds.push(...newCompanyIds);
+//         }
+//       } else {
+//         // Create new assignment with filtered subRoles for this role
+//         employee.assignedRoles.push({
+//           roleId: roleDoc._id,
+//           companyIds,
+//           subRoles: filteredSubRoles,
+//           points,
+//         });
+//       }
+//     }
+
+//     await employee.save();
+
+//     // Populate the response for readability
+//     await employee.populate([
+//       {
+//         path: "assignedRoles.roleId",
+//         select: "role subRole"
+//       },
+//       {
+//         path: "assignedRoles.companyIds",
+//         select: "companyName email"
+//       }
+//     ]);
+
+//     return res.status(200).json({
+//       message: "Roles assigned successfully",
+//       assignedRoles: employee.assignedRoles,
+//     });
+
+//   } catch (error) {
+//     console.error("Error assigning work role:", error);
+//     return res.status(500).json({
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
+
+// export const assignWorkRole = async (req, res) => {
+//   try {
+//     const { employeeId, companyIds, workRoles, subRoles = [], points = [] } = req.body;
+
+//     // Validate input
+//     if (!employeeId || !companyIds?.length || !workRoles?.length) {
+//       return res.status(400).json({
+//         message: "employeeId, companyIds, and workRoles are required",
+//       });
+//     }
+
+//     // Fetch employee
+//     const employee = await Employee.findById(employeeId);
+//     if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+//     // Fetch roles from DB
+//     const roleDocs = await Role.find({ role: { $in: workRoles } });
+//     if (!roleDocs.length) return res.status(404).json({ message: "No valid roles found" });
+
+//     // Process each role
+//     for (const roleDoc of roleDocs) {
+//       const allowedSubRoleIds = (roleDoc.subRole || []).map((sub) => sub._id.toString());
+//       const filteredSubRoles = subRoles.filter((subId) =>
+//         allowedSubRoleIds.includes(subId.toString())
+//       );
+
+//       const existingRole = employee.assignedRoles.find(
+//         (r) => r.roleId.toString() === roleDoc._id.toString()
+//       );
+
+//       if (existingRole) {
+//         // Merge companyIds
+//         const newCompanyIds = companyIds.filter(
+//           (c) => !existingRole.companyIds.map((cid) => cid.toString()).includes(c.toString())
+//         );
+//         if (newCompanyIds.length) existingRole.companyIds.push(...newCompanyIds);
+
+//         // Merge subRoles
+//         const newSubRoles = filteredSubRoles.filter(
+//           (s) => !existingRole.subRoles.map((sr) => sr.toString()).includes(s.toString())
+//         );
+//         if (newSubRoles.length) existingRole.subRoles.push(...newSubRoles);
+
+//         // Merge points
+//         const newPoints = points.filter((p) => !existingRole.points.includes(p));
+//         if (newPoints.length) existingRole.points.push(...newPoints);
+//       } else {
+//         // Create new assignment
+//         employee.assignedRoles.push({
+//           roleId: roleDoc._id,
+//           companyIds,
+//           subRoles: filteredSubRoles,
+//           points,
+//         });
+//       }
+//     }
+
+//     await employee.save();
+
+//     await employee.populate([
+//       { path: "assignedRoles.roleId", select: "role subRole" },
+//       { path: "assignedRoles.companyIds", select: "companyName email" },
+//     ]);
+
+//     return res.status(200).json({
+//       message: "Roles assigned successfully",
+//       assignedRoles: employee.assignedRoles,
+//     });
+//   } catch (error) {
+//     console.error("Error assigning work role:", error);
+//     return res.status(500).json({
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
+// export const assignWorkRole = async (req, res) => {
+//   try {
+//     const { employeeId, companyIds, workRoles, subRoles = [], points = [] } = req.body;
+
+//     if (!employeeId || !companyIds?.length || !workRoles?.length) {
+//       return res.status(400).json({
+//         message: "employeeId, companyIds, and workRoles are required",
+//       });
+//     }
+
+//     const employee = await Employee.findById(employeeId);
+//     if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+//     const roleDocs = await Role.find({ role: { $in: workRoles } });
+//     if (!roleDocs.length) return res.status(404).json({ message: "No valid roles found" });
+
+//     for (const roleDoc of roleDocs) {
+//       const allowedSubRoleIds = (roleDoc.subRole || []).map((sub) => sub._id.toString());
+//       const filteredSubRoles = subRoles.filter((subId) =>
+//         allowedSubRoleIds.includes(subId.toString())
+//       );
+
+//       // 🔍 Find existing record with same roleId AND company combination
+//       let existingRoleEntry = employee.assignedRoles.find((assigned) => {
+//         return (
+//           assigned.roleId.toString() === roleDoc._id.toString() &&
+//           assigned.companyIds.some((c) => companyIds.includes(c.toString()))
+//         );
+//       });
+
+//       if (existingRoleEntry) {
+//         // ✅ Update existing entry
+
+//         // Merge companyIds
+//         const newCompanyIds = companyIds.filter(
+//           (c) => !existingRoleEntry.companyIds.map((cid) => cid.toString()).includes(c.toString())
+//         );
+//         if (newCompanyIds.length) existingRoleEntry.companyIds.push(...newCompanyIds);
+
+//         // Merge subRoles
+//         const newSubRoles = filteredSubRoles.filter(
+//           (s) => !existingRoleEntry.subRoles.map((sr) => sr.toString()).includes(s.toString())
+//         );
+//         if (newSubRoles.length) existingRoleEntry.subRoles.push(...newSubRoles);
+
+//         // Merge points
+//         const newPoints = points.filter((p) => !existingRoleEntry.points.includes(p));
+//         if (newPoints.length) existingRoleEntry.points.push(...newPoints);
+//       } else {
+//         // 🆕 Create new assignment
+//         employee.assignedRoles.push({
+//           roleId: roleDoc._id,
+//           companyIds,
+//           subRoles: filteredSubRoles,
+//           points,
+//         });
+//       }
+//     }
+
+//     await employee.save();
+
+//     await employee.populate([
+//       { path: "assignedRoles.roleId", select: "role subRole" },
+//       { path: "assignedRoles.companyIds", select: "companyName email" },
+//     ]);
+
+//     return res.status(200).json({
+//       message: "Roles assigned successfully",
+//       assignedRoles: employee.assignedRoles,
+//     });
+//   } catch (error) {
+//     console.error("Error assigning work role:", error);
+//     return res.status(500).json({
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
+// export const assignWorkRole = async (req, res) => {
+//   try {
+//     const { employeeId, companyIds, workRoles, subRoles = [], points = [] } = req.body;
+
+//     // Validate required fields
+//     if (!employeeId || !companyIds?.length || !workRoles?.length) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Employee, company, and at least one role are required",
+//       });
+//     }
+
+//     // Fetch employee
+//     const employee = await Employee.findById(employeeId);
+//     if (!employee) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Employee not found",
+//       });
+//     }
+
+//     // For each selected role, merge it into assignedRoles
+//     workRoles.forEach((roleId) => {
+//       // Check if this role already exists for the employee
+//       const existingAssignment = employee.assignedRoles.find((ar) =>
+//         ar.roleId.some((r) => r.toString() === roleId)
+//       );
+
+//       if (existingAssignment) {
+//         // Merge companyIds, subRoles, points without duplicates
+//         existingAssignment.companyIds = Array.from(
+//           new Set([...existingAssignment.companyIds.map(String), ...companyIds])
+//         ).map((id) => mongoose.Types.ObjectId(id));
+
+//         existingAssignment.subRoles = Array.from(
+//           new Set([...existingAssignment.subRoles.map(String), ...subRoles])
+//         ).map((id) => mongoose.Types.ObjectId(id));
+
+//         existingAssignment.points = Array.from(
+//           new Set([...existingAssignment.points, ...points])
+//         );
+//       } else {
+//         // Add new assignment
+//         employee.assignedRoles.push({
+//           roleId: [roleId],
+//           companyIds: companyIds.map((id) => mongoose.Types.ObjectId(id)),
+//           subRoles: subRoles.map((id) => mongoose.Types.ObjectId(id)),
+//           points,
+//         });
+//       }
+//     });
+
+//     await employee.save();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Roles assigned successfully in assignedRoles",
+//       data: employee,
+//     });
+//   } catch (error) {
+//     console.error("❌ Error assigning roles:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
+const { Types } = mongoose;
+
+export const assignWorkRole = async (req, res) => {
+  try {
+    const { employeeId, companyIds, workRoles, subRoles = [], points = [] } = req.body;
+
+    // 1️⃣ Validation
+    if (!employeeId || !companyIds?.length || !workRoles?.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Employee, company, and at least one role are required",
+      });
+    }
+
+    // 2️⃣ Fetch employee
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    // 3️⃣ Convert all IDs to ObjectId
+    const companyObjectIds = companyIds.map(c => new Types.ObjectId(c));
+    const workRoleObjectIds = workRoles.map(r => new Types.ObjectId(r));
+    const subRoleObjectIds = subRoles.map(s => new Types.ObjectId(s));
+
+    // 4️⃣ Check for duplicates in assignedRoles
+    const isDuplicate = employee.assignedRoles.some((ar) => {
+      const roleMatch = ar.roleId.some(r => workRoleObjectIds.includes(r));
+      const companyMatch = ar.companyIds.some(c => companyObjectIds.includes(c));
+      const subRoleMatch = ar.subRoles.some(s => subRoleObjectIds.includes(s));
+      const pointsMatch = points.every(p => ar.points.includes(p));
+      return roleMatch && companyMatch && subRoleMatch && pointsMatch;
+    });
+
+    if (isDuplicate) {
+      return res.status(400).json({
+        success: false,
+        message: "This role assignment already exists for the employee",
+      });
+    }
+
+    // 5️⃣ Push new assignedRole
+    employee.assignedRoles.push({
+      roleId: workRoleObjectIds,
+      companyIds: companyObjectIds,
+      subRoles: subRoleObjectIds,
+      points: Array.from(new Set(points)), // remove duplicate points
+    });
+
+    await employee.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Roles, subRoles, and points assigned successfully",
+      data: employee,
+    });
+
+  } catch (error) {
+    console.error("❌ Error in assignWorkRole:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+
+export const getCompanyByEmployeeId = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+
+    if (!employeeId) 
+      return res.status(400).json({ message: "Employee ID is required" });
+
+    // Fetch employee and populate assigned companies
+    const employee = await Employee.findById(employeeId).populate(
+      "company",
+      "companyName email phone address website"
+    );
+
+    if (!employee) 
+      return res.status(404).json({ message: "Employee not found" });
+
+    if (!employee.company || employee.company.length === 0) 
+      return res.status(404).json({ message: "No company assigned" });
+
+    res.status(200).json({
+      success: true,
+      employeeName: employee.fullName,
+      assignedCompanies: employee.company,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+
+export const getDepartments = async (req, res) => {
+  try {
+    // Fetch only the 'department' field
+    const departments = await Employee.find({}, { department: 1, _id: 0 });
+
+    res.status(200).json({
+      success: true,
+      data: departments,
+    });
+  } catch (error) {
+    console.error("Error fetching departments:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching departments",
+    });
+  }
+};
+
+
+export const getSubRoleName = async (req, res) => {
+  try {
+    const { subRoleId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(subRoleId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid subRole ID format",
+      });
+    }
+
+    // Find a role document containing that subRole
+    const role = await Role.findOne({ "subRole._id": subRoleId });
+    if (!role) {
+      return res.status(404).json({
+        success: false,
+        message: "SubRole not found in any Role",
+      });
+    }
+
+    // Extract that subRole’s name
+    const subRole = role.subRole.find(
+      (s) => s._id.toString() === subRoleId
+    );
+
+    res.status(200).json({
+      success: true,
+      subRoleName: subRole.subRoleName,
+    });
+  } catch (error) {
+    console.error("Error fetching subRole name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching SubRole name",
+      error: error.message,
+    });
   }
 };
