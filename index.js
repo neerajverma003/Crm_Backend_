@@ -20,6 +20,10 @@ import employeeLeadRoutes from "./src/routes/employeeLeadRoutes.js"
 import departmentRoutes from "./src/routes/departmentRoutes.js"
 import designationRoutes from "./src/routes/designationRoutes.js";
 import roleRoutes from "./src/routes/roleRoutes.js"
+import stateRoutes from "./src/routes/stateRoutes.js"
+import destinationRoutes from "./src/routes/destinationRoutes.js"
+import hotelRoutes from "./src/routes/hotelRoutes.js"
+import transportRoutes from "./src/routes/transportRoutes.js"
 import cors from "cors";
 import "./src/utils/scheduleJob.js"
 import { corsOptions } from "./config/corsOptions.js"; // ✅ Add .js extension
@@ -43,6 +47,10 @@ app.use("/employeelead",employeeLeadRoutes)
 app.use('/department',departmentRoutes)
 app.use('/designation',designationRoutes)
 app.use("/role", roleRoutes)
+app.use("/state",stateRoutes)
+app.use("/destination",destinationRoutes)
+app.use("/hotel",hotelRoutes)
+app.use("/transport",transportRoutes)
 app.listen(process.env.PORT, () => {
   console.log(`Server started on port ${process.env.PORT}`);
 });

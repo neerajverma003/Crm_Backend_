@@ -42,17 +42,43 @@ export const createDepartment = async (req, res) => {
   }
 };
 
-export const getDepartment = async(req,res)=>{
+// export const getDepartment = async(req,res)=>{
+//   try {
+//     const data = await Department.find({})
+//     if(!data){
+//       return res.status(400).json({message:"No department found"})
+//     }
+//     return res.status(200).json(data)
+//   } catch (error) {
+//     console.log(error)
+//   }
+// }
+
+
+export const getDepartment = async (req, res) => {
   try {
-    const data = await Department.find({})
-    if(!data){
-      return res.status(400).json({message:"No department found"})
+    const { company } = req.query; // <– read company filter
+
+    const query = {};
+
+    // if company ID is provided → filter
+    if (company) {
+      query.company = company;
     }
-    return res.status(200).json(data)
+
+    const departments = await Department.find(query);
+
+    if (!departments.length) {
+      return res.status(200).json({ departments: [] });
+    }
+
+    return res.status(200).json({ departments });
   } catch (error) {
-    console.log(error)
+    console.log(error);
+    return res.status(500).json({ message: "Server Error" });
   }
-}
+};
+
 
 export const deleteDepartment = async(req,res)=>{
   try {

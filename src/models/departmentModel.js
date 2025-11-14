@@ -13,14 +13,6 @@ const departmentSchema = new Schema(
       required: true,
       trim: true,
     },
-    // designation: {
-    //   type: String,
-    //   trim: true,
-    // },
-    // workRole:{
-    //   type:String,
-    //   require:true,
-    // }
   },
   { timestamps: true }
 );
