@@ -115,7 +115,7 @@ router.get("/", getAllLeads);
 router.get("/stats", getLeadStats);
 router.get("/status/:status", getLeadsByStatus);
 router.get("/:id", getLeadById);
-router.post("/", createLead);
+router.post("/lead", createLead);
 router.patch("/:id", updateLead);
 router.delete("/:id", deleteLead);
 

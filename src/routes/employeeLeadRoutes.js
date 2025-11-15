@@ -1,12 +1,23 @@
 import express from "express";
-import EmployeeLead from "../models/employeeLeadModel.js";
-// import Lead from "../models/LeadModel.js";
-import { createLead, getAllLeads, getLeadsByEmployeeId } from "../controller/employeeLeadController.js";
+import {
+  createLead,
+  getAllLeads,
+  getLeadsByEmployeeId,
+  updateLead, // import the new controller
+} from "../controller/employeeLeadController.js";
 
 const router = express.Router();
 
-// 🟢 Assign Lead to Employee
-router.post("/",createLead)
-router.get("/get",getAllLeads)
+// 🟢 Create a new lead
+router.post("/", createLead);
+
+// 🟢 Get all leads
+router.get("/get", getAllLeads);
+
+// 🟢 Get leads by employee ID
 router.get("/employee/:employeeId", getLeadsByEmployeeId);
+
+// 🟢 Update a lead by lead ID
+router.put("/:leadId", updateLead);
+
 export default router;

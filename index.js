@@ -28,11 +28,13 @@ import cors from "cors";
 import "./src/utils/scheduleJob.js"
 import { corsOptions } from "./config/corsOptions.js"; // ✅ Add .js extension
 import  AdminAttendance  from "./src/routes/adminAttendance.js"
+import b2bCompanyRoutes from "./src/routes/b2bCompanyRoutes.js";
+import b2bState from "./src/routes/b2bStateRoutes.js";
 connectDB(); // ✅ Connect to MongoDB
 
 app.use(express.json()); // ✅ Enable JSON body parsing
 app.use(cors(corsOptions));
-
+app.use("/b2bcompany", b2bCompanyRoutes);
 app.use("/", adminRoutes);
 app.use("/company", companyRoutes);
 app.use("/leads", leadRoutes);
@@ -51,6 +53,7 @@ app.use("/state",stateRoutes)
 app.use("/destination",destinationRoutes)
 app.use("/hotel",hotelRoutes)
 app.use("/transport",transportRoutes)
+app.use("/b2bstate", b2bState);
 app.listen(process.env.PORT, () => {
   console.log(`Server started on port ${process.env.PORT}`);
 });
