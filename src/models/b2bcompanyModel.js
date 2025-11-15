@@ -7,7 +7,8 @@ const B2bCompanySchema = new mongoose.Schema(
      required:true,
       },
     state: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref:"b2bState",
       required: true,
       },
       companyName:{
