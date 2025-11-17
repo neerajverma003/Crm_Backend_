@@ -41,3 +41,30 @@ export const getAllCheque = async(req,res)=>{
         return res.status(500).json({message:"Server error"})
     }
 }
+
+
+// import Expense from "../models/ExpenseModel.js";
+
+// Fetch only the bill URL for a given expense ID
+export const getExpenseBill = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the expense by ID and select only the 'bill' field
+    const expense = await Expense.findById(id).select("bill");
+
+    if (!expense) {
+      return res.status(404).json({ success: false, message: "Expense not found" });
+    }
+
+    if (!expense.bill) {
+      return res.status(404).json({ success: false, message: "No bill attached for this expense" });
+    }
+
+    // Return the bill URL
+    res.status(200).json({ success: true, billUrl: expense.bill });
+  } catch (error) {
+    console.error("❌ Error fetching bill:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};

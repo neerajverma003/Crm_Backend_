@@ -145,111 +145,6 @@ export const getCompanyByAdminId = async (req, res) => {
   }
 };
 
-// -------------------- Assign Work Roles --------------------
-// export const assignWorkRole = async (req, res) => {
-//   try {
-//     const { adminId, companyIds, workRoles, subRoles, points } = req.body;
-
-//     if (!adminId || !companyIds || !Array.isArray(companyIds) || !workRoles || !Array.isArray(workRoles)) {
-//       return res.status(400).json({ message: "adminId, companyIds (array), and workRoles (array) are required" });
-//     }
-
-//     const admin = await Admin.findById(adminId);
-//     if (!admin) return res.status(404).json({ message: "Admin not found" });
-
-//     const roleDocs = await Role.find({ role: { $in: workRoles } });
-//     if (!roleDocs.length) return res.status(404).json({ message: "No valid roles found" });
-
-//     let validatedSubRoles = [];
-//     if (subRoles && Array.isArray(subRoles)) {
-//       const validSubRoleIds = roleDocs.flatMap(r => (r.subRole || []).map(s => s.toString()));
-//       validatedSubRoles = subRoles.filter(id => validSubRoleIds.includes(id.toString()));
-//     }
-
-//     const assignedRoles = roleDocs.map(roleDoc => ({
-//       roleId: roleDoc._id,
-//       companyIds,
-//       subRoles: validatedSubRoles,
-//       points: points && Array.isArray(points) ? points : [],
-//     }));
-
-//     admin.assignedRoles = assignedRoles;
-//     await admin.save();
-
-//     res.status(200).json({ message: "Roles assigned successfully", assignedRoles: admin.assignedRoles });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// };
- 
-// export const assignWorkRole = async (req, res) => {
-//   try {
-//     const { adminId, companyIds, workRoles, subRoles = [], points = [] } = req.body;
-
-//     if (!adminId || !companyIds?.length || !workRoles?.length) {
-//       return res.status(400).json({
-//         message: "adminId, companyIds (array), and workRoles (array) are required",
-//       });
-//     }
-
-//     const admin = await Admin.findById(adminId);
-//     if (!admin) return res.status(404).json({ message: "Admin not found" });
-
-//     // Fetch roles from DB
-//     const roleDocs = await Role.find({ role: { $in: workRoles } });
-//     if (!roleDocs.length)
-//       return res.status(404).json({ message: "No valid roles found" });
-
-//     for (const roleDoc of roleDocs) {
-//       // Filter subRoles for this role
-//       const allowedSubRoleIds = roleDoc.subRole.map(s => s._id.toString());
-//       const filteredSubRoles = subRoles.filter(subId =>
-//         allowedSubRoleIds.includes(subId.toString())
-//       );
-
-//       // Check if role already assigned for any of the companies
-//       const existingIndex = admin.assignedRoles.findIndex(existing =>
-//         existing.roleId.toString() === roleDoc._id.toString() &&
-//         existing.companyIds.some(c => companyIds.includes(c.toString()))
-//       );
-
-//       const assignment = {
-//         roleId: roleDoc._id,
-//         companyIds,
-//         subRoles: filteredSubRoles,
-//         points,
-//       };
-
-//       if (existingIndex !== -1) {
-//         // Replace subRoles & points for existing role-company
-//         admin.assignedRoles[existingIndex].subRoles = filteredSubRoles;
-//         admin.assignedRoles[existingIndex].points = points;
-//         // Merge companies if needed
-//         admin.assignedRoles[existingIndex].companyIds = Array.from(
-//           new Set([...admin.assignedRoles[existingIndex].companyIds.map(c => c.toString()), ...companyIds])
-//         );
-//       } else {
-//         // Add new assignment
-//         admin.assignedRoles.push(assignment);
-//       }
-//     }
-
-//     await admin.save();
-
-//     return res.status(200).json({
-//       message: "Roles assigned successfully",
-//       assignedRoles: admin.assignedRoles,
-//     });
-//   } catch (error) {
-//     console.error("Error assigning work role:", error);
-//     res.status(500).json({ message: "Internal server error", error: error.message });
-//   }
-// };
-
- 
-
-
 export const assignWorkRole = async (req, res) => {
   try {
     const { adminId, companyIds, workRoles, subRoles = [], points = [] } = req.body;
@@ -422,5 +317,77 @@ export const updateLeaveStatus = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error updating leave", error: error.message });
+  }
+};
+
+
+export const getAdminAssignedRolesById = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    const admin = await Admin.findById(adminId)
+      .select("fullName assignedRoles")
+      .populate({
+        path: "assignedRoles.roleId",
+        select: "role subRole"
+      })
+      .populate({
+        path: "assignedRoles.companyIds",
+        select: "companyName"
+      })
+      .populate({
+        path: "assignedRoles.subRoles",
+        select: "subRoleName"
+      });
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    res.status(200).json({ admin });
+
+  } catch (error) {
+    console.error("Error fetching admin details:", error);
+    res.status(500).json({ message: "Server error fetching admin details" });
+  }
+};
+
+
+export const getSubRoleName = async (req, res) => {
+  try {
+    const { subRoleId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(subRoleId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid subRole ID format",
+      });
+    }
+
+    // Find a role document containing that subRole
+    const role = await Role.findOne({ "subRole._id": subRoleId });
+    if (!role) {
+      return res.status(404).json({
+        success: false,
+        message: "SubRole not found in any Role",
+      });
+    }
+
+    // Extract that subRole’s name
+    const subRole = role.subRole.find(
+      (s) => s._id.toString() === subRoleId
+    );
+
+    res.status(200).json({
+      success: true,
+      subRoleName: subRole.subRoleName,
+    });
+  } catch (error) {
+    console.error("Error fetching subRole name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching SubRole name",
+      error: error.message,
+    });
   }
 };

@@ -1,6 +1,6 @@
 import express from "express";
 import upload from "../../config/upload.js"; // your multer config
-import { createExpense, getAllCheque } from "../controller/expenseController.js";
+import { createExpense, getAllCheque, getExpenseBill } from "../controller/expenseController.js";
 
 const router = express.Router();
 
@@ -10,5 +10,5 @@ router.post("/", upload.single("bill"), createExpense);
 
 // GET all expenses
 router.get("/all", getAllCheque);
-
+router.get("/expense/:id/bill", getExpenseBill);
 export default router;

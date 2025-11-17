@@ -11,7 +11,9 @@ import {
   getCompanyByAdminId,
   assignWorkRole,
   getAssignedRoles,
-  getAssignedRolesByAdminAndCompany
+  getAssignedRolesByAdminAndCompany,
+  getAdminAssignedRolesById,
+  getSubRoleName
 } from "../controller/adminController.js";
 
 const router = express.Router();
@@ -35,5 +37,7 @@ router.get("/getAssignedRoles/:adminId/:companyId", getAssignedRolesByAdminAndCo
 // Leave management
 router.get("/admin/all-leaves", getAllLeaveRequests);
 router.put("/admin/update-leave/:leaveId", updateLeaveStatus);
+router.get("/getassignedroles/:adminId", getAdminAssignedRolesById);
+router.get("/getSubRoleName/:subRoleId", getSubRoleName);
 
 export default router;
