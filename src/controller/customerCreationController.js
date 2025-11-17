@@ -35,3 +35,18 @@ export const getAllCustomers = async(req,res)=>{
         return res.status(500).json({message:"Server Error"})
     }
 }
+
+
+export const getCustomerById = async(req,res)=>{
+    try {
+        const {id} = req.params;    
+        const customer = await customerCreation.findById(id);
+        if(!customer){
+            return res.status(404).json({message:"Customer not found"})
+        }
+        return res.status(200).json(customer);
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({message:"Server Error"})
+    }
+}
