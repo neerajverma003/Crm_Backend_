@@ -6,7 +6,7 @@ const router = express.Router();
 
 // POST /expense/expense
 // Use 'bill' because your frontend FormData uses data.append("bill", file)
-router.post("/expense", upload.single("bill"), createExpense);
+router.post("/", upload.single("bill"), createExpense);
 
 // GET all expenses
 router.get("/all", getAllCheque);
