@@ -9,11 +9,18 @@ const adminAttendanceSchema = new Schema(
       ref: "Admin",
       required: true,
     },
-    company: {
-      type: Schema.Types.ObjectId,
-      ref: "Company",
-      required: true,
-    },
+    // company: {
+    //   type: Schema.Types.ObjectId,
+    //   ref: "Company",
+    //   required: true,
+    // },
+company: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Company",
+    required: true,
+  }
+],
 
     // --- Core Attendance Data ---
     date: {

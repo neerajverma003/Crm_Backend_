@@ -76,6 +76,10 @@ const companySchema = new Schema(
         ref: "Designation",
       },
     ],
+    tutorials: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tutorial",
+    }],
   },
   { timestamps: true }
 );
