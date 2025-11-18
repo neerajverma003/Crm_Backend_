@@ -32,6 +32,7 @@ import { corsOptions } from "./config/corsOptions.js"; // ✅ Add .js extension
 import  AdminAttendance  from "./src/routes/adminAttendance.js"
 import b2bCompanyRoutes from "./src/routes/b2bCompanyRoutes.js";
 import b2bState from "./src/routes/b2bStateRoutes.js";
+import EmployeeDestinationRoutes from "./src/routes/employeeDestinationRoutes.js"
 connectDB(); // ✅ Connect to MongoDB
 
 app.use(express.json()); // ✅ Enable JSON body parsing
@@ -58,6 +59,7 @@ app.use("/transport",transportRoutes)
 app.use("/customer", customerRoutes)
 app.use("/b2bstate", b2bState);
 app.use("/tutorials", tutorialRoutes);
+app.use("/employeedestination", EmployeeDestinationRoutes);
 app.listen(process.env.PORT, () => {
   console.log(`Server started on port ${process.env.PORT}`);
 });

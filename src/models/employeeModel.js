@@ -63,6 +63,12 @@ const employeeSchema = new Schema(
         ref: "employeeLead",
       },
     ],
+    destinations: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "EmployeeDestination",
+      },
+    ],
     assignedRoles: [
       {
         roleId: [{ type: Schema.Types.ObjectId, ref: "Role" }],
