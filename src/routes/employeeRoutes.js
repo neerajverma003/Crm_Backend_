@@ -1,5 +1,5 @@
 import express from "express";
-import { AddEmployee, getAllEmployee, deleteEmployee, editEmployee ,getEmployee, getMyLeaves, applyLeave, getAssignedRoles, assignCompany, assignWorkRole,  getCompanyByEmployeeId, getDepartments,  getSubRoleName } from "../controller/employeeController.js";
+import { AddEmployee, getAllEmployee, deleteEmployee, editEmployee ,getEmployee, getMyLeaves, applyLeave, getAssignedRoles, assignCompany, assignWorkRole,  getCompanyByEmployeeId, getDepartments,  getSubRoleName, getAllBDEEmployees } from "../controller/employeeController.js";
 import { editAdmin } from "../controller/adminController.js";
 
 const router = express.Router();
@@ -26,4 +26,5 @@ router.get("/departments", getDepartments);
 // router.get("/getSubRoleName/:subRoleId", getSubRoleName);
 router.get("/getSubRoleName/:subRoleId", getSubRoleName);
 router.get("/my-leaves/:employeeId", getMyLeaves);
+router.get("/bde", getAllBDEEmployees);
 export default router;

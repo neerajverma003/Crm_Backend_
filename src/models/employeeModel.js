@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const { Schema } = mongoose;
@@ -23,18 +22,22 @@ const employeeSchema = new Schema(
       required: [true, "Phone number is required"],
       match: [/^[0-9]{10}$/, "Phone number must be 10 digits"],
     },
+    designation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Designation",
+      // required:[true,"Designation is required"]
+    },
     department: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
       required: [true, "Department is required"],
       trim: true,
     },
-    company: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Company",
-        required: [true, "Company reference is required"],
-      },
-    ],
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: [true, "Company reference is required"],
+    },
     password: {
       type: String,
       required: [true, "Password is required"],
@@ -53,7 +56,7 @@ const employeeSchema = new Schema(
       type: String,
       enum: ["superadmin", "Admin", "Employee"], // Fixed enum
       // default: "Employee",
-      required:false,
+      required: false,
     },
     officialNo: String,
     emergencyNo: String,
@@ -69,6 +72,16 @@ const employeeSchema = new Schema(
         ref: "EmployeeDestination",
       },
     ],
+    // team:[{
+    //   type: Schema.Types.ObjectId,
+    //   ref: "Team",
+    // }],
+
+    team: {
+      type: Schema.Types.ObjectId,
+      ref: "Team",
+    },
+
     assignedRoles: [
       {
         roleId: [{ type: Schema.Types.ObjectId, ref: "Role" }],
