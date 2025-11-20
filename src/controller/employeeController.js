@@ -6,130 +6,6 @@ import Employee from "../models/employeeModel.js";
 import Leave from "../models/LeaveModel.js";
 import Company from "../models/CompanyModel.js"
 import Designation from "../models/designationModel.js";
-/* ===========================
-      ADD EMPLOYEE
-=========================== */
-// export const AddEmployee = async (req, res) => {
-//   try {
-//     const {
-//       fullName,
-//       email,
-//       phone,
-//       password,
-//       department,
-//       company,
-//       designation,
-//       role,
-//       accountActive = true,
-//       officialNo,
-//       emergencyNo
-//     } = req.body;
-
-//     // --- Required Fields Check ---
-//     if (
-//       !fullName ||
-//       !email ||
-//       !phone ||
-//       !department ||
-//       !password ||
-//       !officialNo ||
-//       !emergencyNo ||
-//       !designation ||
-//       !company
-//     ) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "All fields are required",
-//       });
-//     }
-
-//     // --- Validate Company as Array ---
-//     if (!Array.isArray(company) || company.length === 0) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Company must be a non-empty array",
-//       });
-//     }
-
-//     // Validate each company ID
-//     for (const id of company) {
-//       if (!mongoose.Types.ObjectId.isValid(id)) {
-//         return res.status(400).json({
-//           success: false,
-//           message: `Invalid company ID: ${id}`,
-//         });
-//       }
-//     }
-
-//     // --- Validate Designation ---
-//     if (!mongoose.Types.ObjectId.isValid(designation)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid designation ID",
-//       });
-//     }
-
-//     // --- Check for Existing Employee ---
-//     const existingUser = await Employee.findOne({
-//       $or: [{ email }, { phone }],
-//     });
-
-//     if (existingUser) {
-//       return res.status(409).json({
-//         success: false,
-//         message: "Employee already exists with this email or phone number",
-//       });
-//     }
-
-//     // --- Password Hash ---
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     // --- Create Employee ---
-//     const newUser = new Employee({
-//       fullName,
-//       email,
-//       phone,
-//       password: hashedPassword,
-//       department,
-//       company,
-//       designation,
-//       role: role || "Employee",
-//       officialNo,
-//       emergencyNo,
-//       accountActive,
-//     });
-
-//     await newUser.save();
-
-//     return res.status(201).json({
-//       success: true,
-//       message: "Employee added successfully",
-//       employee: {
-//         _id: newUser._id,
-//         fullName: newUser.fullName,
-//         email: newUser.email,
-//         phone: newUser.phone,
-//         company: newUser.company,
-//         department: newUser.department,
-//         role: newUser.role,
-//         officialNo: newUser.officialNo,
-//         emergencyNo: newUser.emergencyNo,
-//         accountActive: newUser.accountActive,
-//         designation: newUser.designation,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Error in AddEmployee:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Server error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-
-
 
 
 
@@ -706,6 +582,48 @@ export const getSubRoleName = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching SubRole name",
+      error: error.message,
+    });
+  }
+};
+
+
+
+export const getEmployeeById = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+
+    if (!employeeId || !mongoose.Types.ObjectId.isValid(employeeId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid employee ID is required",
+      });
+    }
+
+    const employee = await Employee.findById(employeeId)
+      .populate("company", "companyName email phone address website")
+      .populate("designation", "title")
+      .populate("department", "dep")
+      .populate("destinations", "destination") // populate destination field
+      .select("-password");
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Employee fetched successfully",
+      employee,
+    });
+  } catch (error) {
+    console.error("Error fetching employee by ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
       error: error.message,
     });
   }

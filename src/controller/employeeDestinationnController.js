@@ -97,12 +97,19 @@ export const assignDestination = async (req, res) => {
     employee.destinations = updatedDestinations;
     await employee.save();
 
+    // Populate destinations before sending response
+    const populatedEmployee = await Employee.findById(employeeId).populate({
+      path: "destinations",
+      select: "destination", // only include the 'destination' field
+    });
+
     res.status(200).json({
+      success: true,
       message: "Destinations assigned successfully",
-      employee,
+      employee: populatedEmployee,
     });
   } catch (err) {
     console.error("Assign Destination Error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };

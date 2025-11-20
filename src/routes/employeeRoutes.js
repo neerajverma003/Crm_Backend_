@@ -1,6 +1,7 @@
 import express from "express";
-import { AddEmployee, getAllEmployee, deleteEmployee, editEmployee ,getEmployee, getMyLeaves, applyLeave, getAssignedRoles, assignCompany, assignWorkRole,  getCompanyByEmployeeId, getDepartments,  getSubRoleName, getAllBDEEmployees } from "../controller/employeeController.js";
+import { AddEmployee, getAllEmployee, deleteEmployee, editEmployee ,getEmployee, getMyLeaves, applyLeave, getAssignedRoles, assignCompany, assignWorkRole,  getCompanyByEmployeeId, getDepartments,  getSubRoleName, getAllBDEEmployees, getEmployeeById } from "../controller/employeeController.js";
 import { editAdmin } from "../controller/adminController.js";
+// import { getMatchedLeads } from "../controller/leadController.js";
 
 const router = express.Router();
 
@@ -27,4 +28,5 @@ router.get("/departments", getDepartments);
 router.get("/getSubRoleName/:subRoleId", getSubRoleName);
 router.get("/my-leaves/:employeeId", getMyLeaves);
 router.get("/bde", getAllBDEEmployees);
+router.get("/:employeeId", getEmployeeById);
 export default router;

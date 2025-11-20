@@ -1,5 +1,5 @@
 import Lead from "../models/LeadModel.js"
-
+import Employee from "../models/employeeModel.js"
 // Get all leads
 export const getAllLeads = async (req, res) => {
   try {
@@ -23,6 +23,52 @@ export const getLeadById = async (req, res) => {
   }
 };
 
+
+
+
+export const getMatchedLeads = async (req, res) => {
+  try {
+    const employeeId = req.user?._id;
+
+    if (!employeeId) {
+      return res.status(400).json({ message: "Employee ID missing from token" });
+    }
+
+    // Load employee with destinations field
+    const employee = await EmployeeModel.findById(employeeId).lean();
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    const employeeDestinations = (employee.destinations || [])
+      .map((d) => d.destination?.trim().toLowerCase())
+      .filter(Boolean);
+
+    // If employee has no destinations, return empty
+    if (employeeDestinations.length === 0) {
+      return res.status(200).json({ matchedLeads: [] });
+    }
+
+    // Load all leads
+    const leads = await LeadModel.find().lean();
+
+    // Match destination (case insensitive)
+    const matchedLeads = leads.filter((lead) => {
+      if (!lead || !lead.destination) return false;
+
+      const leadDest = lead.destination.trim().toLowerCase();
+      return employeeDestinations.includes(leadDest);
+    });
+
+    return res.status(200).json({ matchedLeads });
+  } catch (error) {
+    console.error("Error matching destinations:", error);
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+};
+
+
 // Create new lead
 export const createLead = async (req, res) => {
   try {
@@ -33,89 +79,6 @@ export const createLead = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-
-
-
-
-// export const createLead = async (req, res) => {
-//   try {
-//     const {
-//       name,
-//       phone,
-//       departureCity,
-//       email,
-//       whatsAppNo,
-//       destination,
-//       expectedTravelDate,
-//       noOfDays,
-//       placesToCover,
-//       noOfPerson,
-//       noOfChild,
-//       childAge,
-//       leadSource,
-//       leadType,
-//       tripType,
-//       company,
-//       leadStatus,
-//       value,
-//       groupNumber,
-//       lastContact,
-//       notes,
-//     } = req.body;
-
-//     // Required fields validation
-//     if (!name || !phone || !departureCity) {
-//       return res.status(400).json({
-//         error: "Name, phone, and departureCity are required fields",
-//       });
-//     }
-
-//     // Convert phone to array if it's a string (comma-separated)
-//     const phoneArray = Array.isArray(phone)
-//       ? phone
-//       : phone.split(",").map((p) => p.trim());
-
-//     // Check for duplicate phone or email
-//     const existingLead = await Lead.findOne({
-//       $or: [{ email }, { phone: { $in: phoneArray } }],
-//     });
-
-//     if (existingLead) {
-//       return res.status(400).json({ error: "Lead with this email or phone already exists" });
-//     }
-
-//     const newLead = new Lead({
-//       name,
-//       phone: phoneArray,
-//       departureCity,
-//       email,
-//       whatsAppNo,
-//       destination,
-//       expectedTravelDate,
-//       noOfDays,
-//       placesToCover,
-//       noOfPerson,
-//       noOfChild,
-//       childAge,
-//       leadSource,
-//       leadType,
-//       tripType,
-//       company,
-//       leadStatus,
-//       value,
-//       groupNumber,
-//       lastContact,
-//       notes,
-//     });
-
-//     const savedLead = await newLead.save();
-
-//     res.status(201).json({ message: "Lead added successfully", lead: savedLead });
-//   } catch (err) {
-//     console.error("Error creating lead:", err);
-//     res.status(500).json({ error: "Server error while adding lead" });
-//   }
-// };
 
 
 // Update lead
