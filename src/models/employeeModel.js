@@ -1,7 +1,5 @@
 import mongoose from "mongoose";
-
 const { Schema } = mongoose;
-
 const employeeSchema = new Schema(
   {
     fullName: {
@@ -72,16 +70,16 @@ const employeeSchema = new Schema(
         ref: "EmployeeDestination",
       },
     ],
-    // team:[{
-    //   type: Schema.Types.ObjectId,
-    //   ref: "Team",
-    // }],
-
     team: {
       type: Schema.Types.ObjectId,
       ref: "Team",
     },
-
+    assignLeads: [
+      {
+        type: Schema.Types.ObjectId,  
+        ref: "Lead",
+      },
+    ],
     assignedRoles: [
       {
         roleId: [{ type: Schema.Types.ObjectId, ref: "Role" }],

@@ -10,7 +10,6 @@ export const getAllLeads = async (req, res) => {
   }
 };
 
-// Get lead by ID
 export const getLeadById = async (req, res) => {
   try {
     const lead = await Lead.findById(req.params.id);
@@ -22,8 +21,6 @@ export const getLeadById = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-
 
 
 export const getMatchedLeads = async (req, res) => {
@@ -69,7 +66,6 @@ export const getMatchedLeads = async (req, res) => {
 };
 
 
-// Create new lead
 export const createLead = async (req, res) => {
   try {
     const lead = await Lead.create(req.body);
@@ -81,7 +77,7 @@ export const createLead = async (req, res) => {
 };
 
 
-// Update lead
+
 export const updateLead = async (req, res) => {
   try {
     const lead = await Lead.findByIdAndUpdate(
@@ -100,7 +96,7 @@ export const updateLead = async (req, res) => {
   }
 };
 
-// Delete lead
+
 export const deleteLead = async (req, res) => {
   try {
     const lead = await Lead.findByIdAndDelete(req.params.id);
@@ -115,7 +111,7 @@ export const deleteLead = async (req, res) => {
   }
 };
 
-// Get leads by status
+
 export const getLeadsByStatus = async (req, res) => {
   try {
     const { status } = req.params;
@@ -126,7 +122,7 @@ export const getLeadsByStatus = async (req, res) => {
   }
 };
 
-// Get lead statistics
+
 export const getLeadStats = async (req, res) => {
   try {
     const totalLeads = await Lead.countDocuments();
@@ -149,5 +145,44 @@ export const getLeadStats = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+
+
+export const assignLead = async (req, res) => {
+  try {
+    const { employeeId, leadIds } = req.body;
+
+    if (!employeeId || !Array.isArray(leadIds) || leadIds.length === 0) {
+      return res.status(400).json({ success: false, message: "Employee ID and lead IDs are required" });
+    }
+
+    // Validate employee
+    const employeeExists = await Employee.exists({ _id: employeeId });
+    if (!employeeExists) {
+      return res.status(404).json({ success: false, message: "Employee not found" });
+    }
+
+    // Validate leads
+    const validLeads = await Lead.find({ _id: { $in: leadIds } });
+    if (validLeads.length === 0) {
+      return res.status(404).json({ success: false, message: "No valid leads found" });
+    }
+
+    // Use $addToSet to add leads without touching other fields
+    await Employee.updateOne(
+      { _id: employeeId },
+      { $addToSet: { lead: { $each: leadIds } } }
+    );
+
+    const updatedEmployee = await Employee.findById(employeeId).populate("lead");
+
+    res.status(200).json({ success: true, data: updatedEmployee, message: "Leads assigned successfully" });
+  } catch (error) {
+    console.error("Error assigning leads:", error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };

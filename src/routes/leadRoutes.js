@@ -12,6 +12,7 @@ import {
   updateLead,
   deleteLead,
   getMatchedLeads,
+  assignLead,
 } from "../controller/leadController.js";
 
 const router = express.Router();
@@ -120,5 +121,5 @@ router.post("/lead", createLead);
 router.patch("/:id", updateLead);
 router.delete("/:id", deleteLead);
 router.get("/employee/matched-leads",  getMatchedLeads);
-
+router.post("/assign", assignLead);
 export default router;
