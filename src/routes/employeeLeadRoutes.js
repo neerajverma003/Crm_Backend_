@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createLead,
+  getAllEmployeeLeads,
   getAllLeads,
   getLeadsByEmployeeId,
   updateLead, // import the new controller
@@ -19,5 +20,7 @@ router.get("/employee/:employeeId", getLeadsByEmployeeId);
 
 // 🟢 Update a lead by lead ID
 router.put("/:leadId", updateLead);
+
+router.get("/all", getAllEmployeeLeads);
 
 export default router;
