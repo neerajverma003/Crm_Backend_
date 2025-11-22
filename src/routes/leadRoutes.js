@@ -30,11 +30,20 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     const workbook = XLSX.readFile(req.file.path);
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    const rawData = XLSX.utils.sheet_to_json(sheet);
 
-    if (!data.length) {
+    if (!rawData.length) {
       return res.status(400).json({ error: "Excel file is empty" });
     }
+
+    const normalizeKey = (k) => k?.toString().trim().toLowerCase().replace(/\s+/g, "");
+    const data = rawData.map((row) => {
+      const r = {};
+      Object.keys(row || {}).forEach((key) => {
+        r[normalizeKey(key)] = row[key];
+      });
+      return r;
+    });
 
     let inserted = 0;
     let skipped = 0;
@@ -42,44 +51,59 @@ router.post("/upload", upload.single("file"), async (req, res) => {
 
     for (const [index, row] of data.entries()) {
       try {
-        // Only phone is required
-        if (!row.phone) {
+        const getField = (obj, keys) => {
+          for (const k of keys) {
+            if (obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return obj[k];
+          }
+          return undefined;
+        };
+
+        const phoneVal = getField(row, [
+          "phone",
+          "phoneno",
+          "contact",
+          "contactnumber",
+          "mobile",
+          "mobileno",
+          "whatsapp",
+          "whatsappno",
+        ]);
+
+        if (!phoneVal) {
           skipped++;
           errors.push(`Row ${index + 2}: Missing required field (phone)`);
           continue;
         }
 
-        // Skip duplicate phone
-        const exists = await Lead.findOne({ phone: row.phone });
+        const exists = await Lead.findOne({ phone: phoneVal });
         if (exists) {
           skipped++;
           errors.push(`Row ${index + 2}: Duplicate lead (phone already exists)`);
           continue;
         }
 
-        // Create lead; other fields are optional
         const lead = new Lead({
-          phone: row.phone,
-          name: row.name || "",
-          departureCity: row.departureCity || "",
-          email: row.email || "",
-          whatsAppNo: row.whatsAppNo || "",
-          destination: row.destination || "",
-          expectedTravelDate: row.expectedTravelDate ? new Date(row.expectedTravelDate) : null,
-          noOfDays: row.noOfDays ? Number(row.noOfDays) : null,
-          placesToCover: row.placesToCover || "",
-          noOfPerson: row.noOfPerson ? Number(row.noOfPerson) : null,
-          noOfChild: row.noOfChild ? Number(row.noOfChild) : null,
-          childAge: row.childAge || "",
-          leadSource: row.leadSource || "",
-          leadType: row.leadType || "",
-          tripType: row.tripType || "",
-          company: row.company || "",
-          leadStatus: row.leadStatus || "Hot",
-          value: row.value ? Number(row.value) : null,
-          groupNumber: row.groupNumber || "",
-          lastContact: row.lastContact ? new Date(row.lastContact) : Date.now(),
-          notes: row.notes || "",
+          phone: String(phoneVal),
+          name: getField(row, ["name"]) || "",
+          departureCity: getField(row, ["departurecity"]) || "",
+          email: getField(row, ["email"]) || "",
+          whatsAppNo: getField(row, ["whatsappno", "whatsapp"]) || "",
+          destination: getField(row, ["destination"]) || "",
+          expectedTravelDate: getField(row, ["expectedtraveldate"]) ? new Date(getField(row, ["expectedtraveldate"])) : null,
+          noOfDays: getField(row, ["noofdays"]) ? Number(getField(row, ["noofdays"])) : null,
+          placesToCover: getField(row, ["placestocover"]) || "",
+          noOfPerson: getField(row, ["noofperson"]) ? Number(getField(row, ["noofperson"])) : null,
+          noOfChild: getField(row, ["noofchild"]) ? Number(getField(row, ["noofchild"])) : null,
+          childAges: getField(row, ["childages", "childage"]) ? [].concat(getField(row, ["childages", "childage"])) : [],
+          leadSource: getField(row, ["leadsource"]) || "",
+          leadType: getField(row, ["leadtype"]) || "",
+          tripType: getField(row, ["triptype"]) || "",
+          company: getField(row, ["company"]) || "",
+          leadStatus: getField(row, ["leadstatus"]) || "Hot",
+          value: getField(row, ["value"]) ? Number(getField(row, ["value"])) : null,
+          groupNumber: getField(row, ["groupnumber"]) || "",
+          lastContact: getField(row, ["lastcontact"]) ? new Date(getField(row, ["lastcontact"])) : Date.now(),
+          notes: getField(row, ["notes"]) || "",
         });
 
         await lead.save();
@@ -96,6 +120,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       message: "Lead import completed",
       total: data.length,
       inserted,
+      insertedCount: inserted,
       skipped,
       errors,
       successRate: ((inserted / data.length) * 100).toFixed(2) + "%",

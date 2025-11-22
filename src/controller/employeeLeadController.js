@@ -20,6 +20,7 @@ export const createLead = async (req, res) => {
       notes,
       noOfDays,
       customNoOfDays,
+      groupNumber,
       placesToCover,
       noOfPerson,
       noOfChild,
@@ -45,6 +46,7 @@ export const createLead = async (req, res) => {
       noOfPerson,
       noOfChild,
       childAges,
+      groupNumber,
       employee: employeeId,
     });
 
